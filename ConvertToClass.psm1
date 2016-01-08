@@ -160,8 +160,8 @@ function Get-DataType {
 
 function ConvertTo-Class {
     param(
-        $className,
-        $target
+        $target,
+        $className
     )
 
     if($target -is [string]) {
@@ -172,7 +172,7 @@ function ConvertTo-Class {
                 $className="RootObject"
             }
 
-            ConvertTo-Class $className $cvt
+            ConvertTo-Class $cvt $className
         } catch {
 
             try {
@@ -181,7 +181,7 @@ function ConvertTo-Class {
                     $className="RootObject"
                 }
 
-                ConvertTo-Class $className $cvt
+                ConvertTo-Class $cvt $className
             } catch {
                 throw "bad data"
             }
@@ -200,13 +200,13 @@ function ConvertTo-Class {
 
             "`t[{0}[]]`${0}" -f $_.name
 
-            $otherClasses+=ConvertTo-Class $_.name ($_.Value | select -First 1)
+            $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name
         }
 
         {$_.DataType -eq 'PSCustomObject'} {
 
             "`t[{0}]`${0}" -f $_.name
-            $otherClasses+=ConvertTo-Class $_.name $_.Value
+            $otherClasses+=ConvertTo-Class $_.Value $_.name
         }
 
         default {
