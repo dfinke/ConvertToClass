@@ -159,6 +159,7 @@ function Get-DataType {
 }
 
 function ConvertTo-Class {
+    [CmdletBinding()]
     param(
         $target,
         $className
@@ -197,21 +198,24 @@ function ConvertTo-Class {
     $xport = switch ($infered) {
 
         {$_.DataType -eq 'Array'} {
-            if($_.Value[0] -is [string] -or $_.Value[0] -is [System.ValueType]) {                
-                "`t[object[]]`${0}" -f $_.name                
+            if($_.Value[0] -is [string] -or $_.Value[0] -is [System.ValueType]) {
+                Write-Verbose "Object Array $($_.name)"
+                "`t[object[]]`${0}" -f $_.name
             } else {
+                Write-Verbose "Array $($_.name)"
                 "`t[{0}[]]`${0}" -f $_.name
                 $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name
             }
         }
 
         {$_.DataType -eq 'PSCustomObject'} {
-
+            Write-Verbose "Class $($_.name)"
             "`t[{0}]`${0}" -f $_.name
             $otherClasses+=ConvertTo-Class $_.Value $_.name
         }
 
         default {
+            Write-Verbose "Property $($_.DataType) $($_.name)"
             "`t[{0}]`${1}" -f $_.DataType, ($_.name -replace "/","")
         }
     }
