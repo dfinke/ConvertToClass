@@ -197,10 +197,12 @@ function ConvertTo-Class {
     $xport = switch ($infered) {
 
         {$_.DataType -eq 'Array'} {
-
-            "`t[{0}[]]`${0}" -f $_.name
-
-            $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name
+            if($_.Value[0] -is [string] -or $_.Value[0] -is [System.ValueType]) {                
+                "`t[object[]]`${0}" -f $_.name                
+            } else {
+                "`t[{0}[]]`${0}" -f $_.name
+                $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name
+            }
         }
 
         {$_.DataType -eq 'PSCustomObject'} {
