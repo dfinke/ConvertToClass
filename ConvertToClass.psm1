@@ -158,12 +158,40 @@ function Get-DataType {
     }
 }
 
+$PowerShellConverter = @'
+function NewClass       ([string]$name) {"class $name {"}
+function NewProperty    ([string]$DataType, [string]$Name) { return "    [$DataType]`$$Name"}
+function NewArray       ([string]$Name) { return "    [$Name[]]`$$Name"}
+function NewObjectArray ([string]$Name) { return "    [object[]]`$$Name"}
+function EndClass       ($name) {"}"}
+'@
+
+$CSharpConverter = @'
+function NewClass       ([string]$name) {"class $name `r`n{"}
+function NewProperty    ([string]$DataType, [string]$Name) { return "`t$DataType $Name {get; set;}"}
+function NewArray       ([string]$Name) { return "`t$Name[] $Name {get; set;}"}
+function NewObjectArray ([string]$Name) { return "`tobject[] $Name {get; set;}"}
+function EndClass       ($name) {"}`r`n"}
+'@
 function ConvertTo-Class {
     [CmdletBinding()]
     param(
-        $target,
-        $className
+        $Target,
+        $ClassName,
+        [ValidateSet('PowerShell','CSharp')]
+        $CodeGen="PowerShell",
+        $Converter
     )
+
+    if(!$Converter) {
+        switch ($CodeGen) {
+            'PowerShell' {$Converter=$PowerShellConverter}
+            'CSharp'     {$Converter=$CSharpConverter}
+        }
+    }
+
+    #if($Converter) { $Converter | Invoke-Expression }
+    $Converter | Invoke-Expression
 
     if($target -is [string]) {
         try {
@@ -173,7 +201,7 @@ function ConvertTo-Class {
                 $className="RootObject"
             }
 
-            ConvertTo-Class $cvt $className
+            ConvertTo-Class $cvt $className -CodeGen $CodeGen
         } catch {
 
             try {
@@ -182,7 +210,7 @@ function ConvertTo-Class {
                     $className="RootObject"
                 }
 
-                ConvertTo-Class $cvt $className
+                ConvertTo-Class $cvt $className -CodeGen $CodeGen
             } catch {
                 throw "bad data"
             }
@@ -200,32 +228,36 @@ function ConvertTo-Class {
         {$_.DataType -eq 'Array'} {
             if($_.Value[0] -is [string] -or $_.Value[0] -is [System.ValueType]) {
                 Write-Verbose "Object Array $($_.name)"
-                "`t[object[]]`${0}" -f $_.name
+                #"`t[object[]]`${0}" -f $_.name
+                NewObjectArray $_.Name
             } else {
                 Write-Verbose "Array $($_.name)"
-                "`t[{0}[]]`${0}" -f $_.name
-                $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name
+                #"`t[{0}[]]`${0}" -f $_.name
+                NewArray $_.Name $_.Name
+                $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name -CodeGen $CodeGen
             }
         }
 
         {$_.DataType -eq 'PSCustomObject'} {
-            Write-Verbose "Class $($_.name)"
-            "`t[{0}]`${0}" -f $_.name
-            $otherClasses+=ConvertTo-Class $_.Value $_.name
+            #Write-Verbose "Class $($_.name)"
+            #"`t[{0}]`${0}" -f $_.name
+            NewProperty $_.Name $_.Name
+
+            $otherClasses+=ConvertTo-Class $_.Value $_.name -CodeGen $CodeGen
         }
 
         default {
             Write-Verbose "Property $($_.DataType) $($_.name)"
-            "`t[{0}]`${1}" -f $_.DataType, ($_.name -replace "/","")
+            #"`t[{0}]`${1}" -f $_.DataType, ($_.name -replace "/","")
+            NewProperty $_.DataType ($_.name -replace "/","")
         }
     }
 
+NewClass $ClassName
 @"
-class $className {
-$($xport -join "`r`n")
-}
-
+$($xport -join "`n")
 "@
+EndClass
 
 $otherClasses
 }
