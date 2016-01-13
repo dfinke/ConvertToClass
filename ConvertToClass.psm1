@@ -148,12 +148,17 @@ function Get-DataType {
         $name = $p[$idx]
         $value = $record.$name
 
-        $result=Invoke-AllTests $value -OnlyPassing -FirstOne
+        if($value -eq $null) {
+            $dataType = "object"
+        } else {
+            $result=Invoke-AllTests $value -OnlyPassing -FirstOne
+            $dataType = $result.DataType
+        }
 
         [PSCustomObject]@{
             Name         = $name
             Value        = $value
-            DataType     = $result.DataType
+            DataType     = $dataType
         }
     }
 }
