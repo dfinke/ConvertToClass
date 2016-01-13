@@ -232,28 +232,30 @@ function ConvertTo-Class {
 
         {$_.DataType -eq 'Array'} {
             if($_.Value[0] -is [string] -or $_.Value[0] -is [System.ValueType]) {
-                Write-Verbose "Object Array $($_.name)"
-                #"`t[object[]]`${0}" -f $_.name
+                
+                Write-Verbose "Object Array $($_.name)"                
                 NewObjectArray $_.Name
             } else {
-                Write-Verbose "Array $($_.name)"
-                #"`t[{0}[]]`${0}" -f $_.name
-                NewArray $_.Name $_.Name
-                $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name -CodeGen $CodeGen
+                
+                Write-Verbose "Array $($_.name)"                
+                if($_.Value.Count -eq 0) {
+                    NewObjectArray $_.Name                    
+                } else {
+                    NewArray $_.Name $_.Name
+                    $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name -CodeGen $CodeGen
+                }
             }
         }
 
         {$_.DataType -eq 'PSCustomObject'} {
-            #Write-Verbose "Class $($_.name)"
-            #"`t[{0}]`${0}" -f $_.name
-            NewProperty $_.Name $_.Name
 
+            NewProperty $_.Name $_.Name
             $otherClasses+=ConvertTo-Class $_.Value $_.name -CodeGen $CodeGen
         }
 
         default {
-            Write-Verbose "Property $($_.DataType) $($_.name)"
-            #"`t[{0}]`${1}" -f $_.DataType, ($_.name -replace "/","")
+            
+            Write-Verbose "Property $($_.DataType) $($_.name)"            
             NewProperty $_.DataType ($_.name -replace "/","")
         }
     }
