@@ -168,7 +168,7 @@ function NewClass       ([string]$name) {"class $name {"}
 function NewProperty    ([string]$DataType, [string]$Name) { return "    [$DataType]`$$Name"}
 function NewArray       ([string]$Name) { return "    [$Name[]]`$$Name"}
 function NewObjectArray ([string]$Name) { return "    [object[]]`$$Name"}
-function EndClass       ($name) {"}"}
+function EndClass       ($name) {"}`r`n"}
 '@
 
 $CSharpConverter = @'
@@ -178,6 +178,18 @@ function NewArray       ([string]$Name) { return "`t$Name[] $Name {get; set;}"}
 function NewObjectArray ([string]$Name) { return "`tobject[] $Name {get; set;}"}
 function EndClass       ($name) {"}`r`n"}
 '@
+
+$classes = @{}
+function Get-ClassName ($className) {
+
+    $classes.$className+=1
+    if($classes.$className -eq 1) {
+        $className
+    } else {
+        "$className$($classes.$className-1)"
+    }
+}
+
 function ConvertTo-Class {
     [CmdletBinding()]
     param(
@@ -203,7 +215,7 @@ function ConvertTo-Class {
             $cvt = $target | ConvertFrom-Json
 
             if(!$className) {
-                $className="RootObject"
+                $className = Get-ClassName "RootObject"
             }
 
             ConvertTo-Class $cvt $className -CodeGen $CodeGen
@@ -212,7 +224,7 @@ function ConvertTo-Class {
             try {
                 $cvt = $target | ConvertFrom-Csv | select -First 1
                 if(!$className) {
-                    $className="RootObject"
+                    $className = Get-ClassName "RootObject"
                 }
 
                 ConvertTo-Class $cvt $className -CodeGen $CodeGen
@@ -242,7 +254,7 @@ function ConvertTo-Class {
                     NewObjectArray $_.Name                    
                 } else {
                     NewArray $_.Name $_.Name
-                    $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) $_.name -CodeGen $CodeGen
+                    $otherClasses+=ConvertTo-Class ($_.Value | select -First 1) (Get-ClassName $_.name) -CodeGen $CodeGen
                 }
             }
         }
@@ -250,7 +262,7 @@ function ConvertTo-Class {
         {$_.DataType -eq 'PSCustomObject'} {
 
             NewProperty $_.Name $_.Name
-            $otherClasses+=ConvertTo-Class $_.Value $_.name -CodeGen $CodeGen
+            $otherClasses+=ConvertTo-Class $_.Value (Get-ClassName $_.name) -CodeGen $CodeGen
         }
 
         default {
