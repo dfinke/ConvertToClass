@@ -164,11 +164,11 @@ function Get-DataType {
 }
 
 $PowerShellConverter = @'
-function NewClass       ([string]$name) {"class $name {"}
+function NewClass       ([string]$name) {"class $name {`r`n"}
 function NewProperty    ([string]$DataType, [string]$Name) { return "    [$DataType]`$$Name"}
 function NewArray       ([string]$Name) { return "    [$Name[]]`$$Name"}
 function NewObjectArray ([string]$Name) { return "    [object[]]`$$Name"}
-function EndClass       ($name) {"}`r`n"}
+function EndClass       () {"`r`n}`r`n"}
 '@
 
 $CSharpConverter = @'
@@ -274,9 +274,26 @@ function ConvertTo-Class {
 
 NewClass $ClassName
 @"
-$($xport -join "`n")
+$($xport -join "`r`n")
 "@
 EndClass
 
 $otherClasses
+}
+
+function DoConvert {
+    param($ctx)
+    
+    $target = (Get-ClipBoard) -join "`n"
+    $r=ConvertTo-Class $target
+
+    $ctx.CurrentFile.InsertText($r, $ctx.SelectedRange)    
+}
+
+if ($psEditor) {
+    Register-EditorCommand `
+        -Name "ConvertToClass.MyEditorCommand" `
+        -DisplayName "Convert To PowerShell Class" `
+        -Function DoConvert `
+        -SuppressOutput
 }
