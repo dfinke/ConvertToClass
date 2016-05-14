@@ -1,0 +1,13 @@
+{
+    "resources": [{
+        "type": "config",
+        "name": "appsettings",
+        "apiVersion": "2015-04-01",
+        "properties": {
+            "apiPath": "[concat('http://', variables('apiSiteName'), '.azurewebsites.net/api')]"
+        },
+        "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
+        ]
+    }]
+}

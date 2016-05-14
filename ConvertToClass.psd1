@@ -4,7 +4,7 @@
 RootModule = 'ConvertToClass.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.4'
+ModuleVersion = '1.5'
 
 # ID used to uniquely identify this module
 GUID = '97e40810-d792-4a94-b725-29dbba78788e'
